@@ -158,7 +158,6 @@ sv_r SVMotor::sv_read2(int id)
 	}
 	sendbuf[7] = sum;								// チェックサム
 
-
 	send((char *)sendbuf, 8);
 
 
@@ -173,7 +172,6 @@ sv_r SVMotor::sv_read2(int id)
 	for (i = 3; i < 18; i++) {
 		sum = sum ^ readbuf[i];
 	}
-
 
 	if (sum) {
 		// チェックサムエラー
@@ -192,8 +190,8 @@ sv_r SVMotor::sv_read2(int id)
 	return rDATA;
 }
 
-
-void SVMotor::sv_move_long(sv_r sendDATA[100]) {
+//svcntサーボの個数
+void SVMotor::sv_move_long(sv_r sendDATA[],unsigned char svcnt) {
 
 	unsigned char	sendbuf[200];
 	unsigned char	sum;
@@ -209,38 +207,14 @@ void SVMotor::sv_move_long(sv_r sendDATA[100]) {
 	sendbuf[3] = (unsigned char)0x00;				    // フラグ
 	sendbuf[4] = (unsigned char)0x1E;				    // アドレス(0x1E=30)
 	sendbuf[5] = (unsigned char)0x05;				    // 長さ(5byte)
-	sendbuf[6] = (unsigned char)0x16;				    // 個数22個(0x16=22)
+//	sendbuf[6] = (unsigned char)0x16;				    // 個数22個(0x16=22)
+	sendbuf[6] = svcnt;									// サーボの個数
 
 	j = 7;
 
-	for (i = 61; i < 69; i++) {
+	for (i = 0; i < svcnt; i++) {
 
-		sendbuf[j] = i;															// ID
-
-		sendbuf[j + 1] = (unsigned char)(sendDATA[i].g_angle & 0x00FF);			// 位置
-		sendbuf[j + 2] = (unsigned char)((sendDATA[i].g_angle & 0xFF00) >> 8);	// 位置
-		
-		sendbuf[j + 3] = (unsigned char)(sendDATA[i].g_time & 0x00FF);			// 速度
-		sendbuf[j + 4] = (unsigned char)((sendDATA[i].g_time & 0xFF00) >> 8);	// 速度
-
-		j = j + 5;
-	}
-
-	for (i = 71; i < 79; i++) {
-
-		sendbuf[j] = i;															// ID
-
-		sendbuf[j + 1] = (unsigned char)(sendDATA[i].g_angle & 0x00FF);			// 位置
-		sendbuf[j + 2] = (unsigned char)((sendDATA[i].g_angle & 0xFF00) >> 8);	// 位置
-
-		sendbuf[j + 3] = (unsigned char)(sendDATA[i].g_time & 0x00FF);			// 速度
-		sendbuf[j + 4] = (unsigned char)((sendDATA[i].g_time & 0xFF00) >> 8);	// 速度
-
-		j = j + 5;
-	}
-	for (i = 81; i < 84; i++) {
-
-		sendbuf[j] = i;															// ID
+		sendbuf[j] = (unsigned char)sendDATA[i].id;															// ID
 
 		sendbuf[j + 1] = (unsigned char)(sendDATA[i].g_angle & 0x00FF);			// 位置
 		sendbuf[j + 2] = (unsigned char)((sendDATA[i].g_angle & 0xFF00) >> 8);	// 位置
@@ -251,18 +225,6 @@ void SVMotor::sv_move_long(sv_r sendDATA[100]) {
 		j = j + 5;
 	}
 
-	for (i = 91; i < 94; i++) {
-
-		sendbuf[j] = i;															// ID
-
-		sendbuf[j + 1] = (unsigned char)(sendDATA[i].g_angle & 0x00FF);			// 位置
-		sendbuf[j + 2] = (unsigned char)((sendDATA[i].g_angle & 0xFF00) >> 8);	// 位置
-
-		sendbuf[j + 3] = (unsigned char)(sendDATA[i].g_time & 0x00FF);			// 速度
-		sendbuf[j + 4] = (unsigned char)((sendDATA[i].g_time & 0xFF00) >> 8);	// 速度
-
-		j = j + 5;
-	}
 
 													// チェックサムの計算
 	sum = sendbuf[2];
@@ -273,7 +235,6 @@ void SVMotor::sv_move_long(sv_r sendDATA[100]) {
 
 	j++;
 	send((char *)sendbuf, j);						// 送信
-
 }
 
 unsigned char SVMotor::sv_read_Responsetime(int id)
@@ -333,7 +294,7 @@ unsigned char SVMotor::sv_read_Responsetime(int id)
 
 
 
-
+/*
 void SVMotor::sv_readFF(sv_r *rDATA)
 {
 	unsigned char	sendbuf[32];
@@ -395,7 +356,7 @@ void SVMotor::sv_readFF(sv_r *rDATA)
 	}
 
 }
-
+*/
 
 // サーボのレスポンスタイム設定
 void SVMotor::sv_write_Responsetime(int id, unsigned char r_time) {

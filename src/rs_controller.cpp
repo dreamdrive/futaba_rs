@@ -45,11 +45,13 @@ char joint_list[SRVCNT][30]={
 char get_port[] = SERIAL_PORT;
 int get_baud = SERIAL_BAUD;
 
-sv_r Data[SRVCNT];		//とりあえず0〜99のIDを
+sv_r pubData[SRVCNT];
+sv_r subData[SRVCNT];
+
 SVMotor SSV;
 
 sensor_msgs::JointState js_pub;
-
+sensor_msgs::JointState js_sub;
 
 void RSGetDataALL(void)
 {
@@ -60,13 +62,13 @@ void RSGetDataALL(void)
 		rData[i] = SSV.sv_read2(id_list[i]);
 
 		if (rData[i].error == 0){
-			Data[i].id			= id_list[i];
-			Data[i].angle		= rData[i].angle;
-			Data[i].load		= rData[i].load;
-			Data[i].speed		= rData[i].speed;
-			Data[i].temperature = rData[i].temperature;
-			Data[i].time		= rData[i].time;
-			Data[i].error		= rData[i].error;
+			pubData[i].id			= id_list[i];
+			pubData[i].angle		= rData[i].angle;
+			pubData[i].load		= rData[i].load;
+			pubData[i].speed		= rData[i].speed;
+			pubData[i].temperature = rData[i].temperature;
+			pubData[i].time		= rData[i].time;
+			pubData[i].error		= rData[i].error;
 		}
 	}
 
@@ -84,9 +86,31 @@ void Data2Jointstate(void){
 	
 	for(i=0;i<SRVCNT;i++){
 		js_pub.name[i] = joint_list[i];
-		js_pub.position[i] = (float)2.0*M_PI*(Data[i].angle / 10.0)/360.0;		// deg 2 rad
-		js_pub.velocity[i] = (float)2.0*M_PI*Data[i].speed/360.0;		// deg/s 2 rad/s
-		js_pub.effort[i] = Data[i].load;
+		js_pub.position[i] = (float)2.0*M_PI*(pubData[i].angle / 10.0)/360.0;		// deg 2 rad
+		js_pub.velocity[i] = (float)2.0*M_PI*pubData[i].speed/360.0;		// deg/s 2 rad/s
+		js_pub.effort[i] = pubData[i].load;
+	}
+}
+
+//コールバックがあるとグローバルに読み込み
+void monitorJointState_callback(const sensor_msgs::JointState::ConstPtr& jointstate){
+	int i,j;
+	for(i=0;i<SRVCNT;i++){
+		for(j=0;j<SRVCNT;j++){
+			if(joint_list[i] == jointstate->name[j]){
+				//printf("%s / %lf\n",jointstate->name[j].c_str(),jointstate->position[j] );
+    			//js_sub.name[i] = jointstate->name[j];    // 
+        		//js_sub.position[i] = jointstate->position[j];    // ポジション読み出し
+    			//js_sub.velocity[i] = jointstate->velocity[j];    // 速度読み出し
+    			//js_sub.effort[i] = jointstate->effort[j];    // 負荷読み出し
+
+				subData[i].id = id_list[i];
+				subData[i].g_angle =(short)  3600.0 * (jointstate->position[j]/(2.0*M_PI));
+				subData[i].g_time = 2;	// サーボの移動速度を20msecに固定
+		
+				//printf("%s / %lf|| %d / %d / %d\n",jointstate->name[j].c_str(),jointstate->position[j],subData[i].id , subData[i].g_angle , subData[i].g_time );
+			}
+		}
 	}
 }
 
@@ -97,8 +121,14 @@ int main(int argc, char **argv)
 
 	//パブリッシャの作成
 	ros::Publisher pub_joints;
-//	pub_joints = node.advertise<sensor_msgs::JointState>("/rs_controller/joint_states",10);
-	pub_joints = node.advertise<sensor_msgs::JointState>("/joint_states",10);
+	pub_joints = node.advertise<sensor_msgs::JointState>("/rs_controller/joint_states",10);
+//	pub_joints = node.advertise<sensor_msgs::JointState>("/joint_states",10);
+
+	// サブスクライバの作成
+	ros::Subscriber sub_joints;
+	sub_joints = node.subscribe("/joint_states", 10, monitorJointState_callback);		// moveitから取る
+//	sub_joints = node.subscribe("/move_group/fake_controller_joint_states", 10, monitorJointState_callback);		// moveitから取る
+
 
 	ros::Rate loop_rate(100);	// 100Hz
 
@@ -107,20 +137,28 @@ int main(int argc, char **argv)
 		while (1);
 	}; 
 
+	int i;
+	for(i=0;i<SRVCNT;i++){
+		SSV.sv_torque(id_list[i], 1);	// トルクオン
+	}
+
 	while(ros::ok()){
 
-		RSGetDataALL();		// ノーマルサーボ取得
+		RSGetDataALL();		// サーボ取得
 		Data2Jointstate();
-
-		//printf("ID78 = %d ERR = %d\n",Data[78].angle,Data[78].error);
-
 		pub_joints.publish(js_pub);
+
+		SSV.sv_move_long(subData,SRVCNT);
 
 		ros::spinOnce();   // コールバック関数を呼ぶ
     	loop_rate.sleep();
 	}
 
-		SSV.close();	// シリアルポートクローズ
+	for(i=0;i<SRVCNT;i++){
+		SSV.sv_torque(id_list[i], 0);	// トルク
+	}
+
+	SSV.close();	// シリアルポートクローズ
 
 	return 0;
 }

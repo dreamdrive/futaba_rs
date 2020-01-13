@@ -25,14 +25,14 @@ private:
 public:
 
 	void sv_move(int id, short sPos, unsigned short sTime);
-	void sv_move_long(sv_r sendDATA[100]);
+	void sv_move_long(sv_r sendDATA[],unsigned char svcnt);
 
 	void sv_torque(int id, int torque);		// トルクのオンオフ
 	int sv_read_torque(int id);
 
 	sv_r sv_read(int id);
 	sv_r sv_read2(int id);
-	void sv_readFF(sv_r *rDATA);
+//	void sv_readFF(sv_r *rDATA);
 
 	unsigned char sv_read_Responsetime(int id);
 	void sv_write_Responsetime(int id, unsigned char r_time);
