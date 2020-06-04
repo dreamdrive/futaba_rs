@@ -135,7 +135,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/futaba_rs_node.cpp)
 
-add_executable(rs_controller src/rs_controller.cpp src/serial.cpp src/sv_motor.cpp)
+add_executable(rs_controller src/rs_controller.cpp src/sv_motor.cpp)
 add_dependencies(rs_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
