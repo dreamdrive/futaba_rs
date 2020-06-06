@@ -45,21 +45,20 @@ sensor_msgs::JointState js_sub;
 void RSGetDataALL(void)
 {
 	int i;
-	sv_r rData[SRVCNT];
+	sv_r rData[SRVCNT];		// 受信データ
 	for (i = 0; i < SRVCNT; i++) {
 		rData[i] = RS.sv_read2(id_list[i]);
 
-		if (rData[i].error == 0){
-			pubData[i].id			= id_list[i];
+		if (rData[i].error == NO_ERROR){
+			pubData[i].id			= id_list[i];	// 受信データをパブリッシュ用データに変換
 			pubData[i].angle		= rData[i].angle;
 			pubData[i].load			= rData[i].load;
 			pubData[i].speed		= rData[i].speed;
 			pubData[i].temperature 	= rData[i].temperature;
 			pubData[i].time			= rData[i].time;
 			pubData[i].error		= rData[i].error;
-			// ROS_INFO("Futaba Servo Read OK (SV ID : %d )",id_list[i]); // debag
 		}else{
-			ROS_ERROR("Futaba Servo Read ERROR (SV ID : %d | code : %d)",id_list[i],rData[i].error);
+			ROS_ERROR("Futaba Servo ERROR ( ID : %d | code : %04X )",id_list[i],rData[i].error);
 		}
 	}
 }
@@ -77,7 +76,7 @@ void Data2Jointstate(void){
 	for(i=0;i<SRVCNT;i++){
 		js_pub.name[i] = joint_list[i];
 		js_pub.position[i] = (float)2.0*M_PI*(pubData[i].angle / 10.0)/360.0;		// deg 2 rad
-		js_pub.velocity[i] = (float)2.0*M_PI*pubData[i].speed/360.0;		// deg/s 2 rad/s
+		js_pub.velocity[i] = (float)2.0*M_PI*pubData[i].speed/360.0;				// deg/s 2 rad/s
 		js_pub.effort[i] = pubData[i].load;
 	}
 }

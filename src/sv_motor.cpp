@@ -1,4 +1,3 @@
-//#include "stdafx.h"
 #include <string.h>
 #include <stdio.h>
 #include <strings.h>
@@ -15,7 +14,7 @@
 
 #include "sv_motor.h"
 
-#define  LATENCY_TIMER 16
+#define LATENCY_TIMER 16
 
 // サーボの動作
 ssize_t SVMotor::sv_move(int id, short sPos, unsigned short sTime) {
@@ -120,7 +119,7 @@ sv_r SVMotor::sv_read(int id)
 
 	if (readPort(readbuf, 26) != 26){
 			printf("packet time out\n");
-			rDATA.error = -4;
+			rDATA.error = TIMEOUT_ERROR;
 			return rDATA;
 	}
 
@@ -132,7 +131,7 @@ sv_r SVMotor::sv_read(int id)
 
 	if (sum) {
 		// チェックサムエラー
-		rDATA.error = -3;
+		rDATA.error = CHECKSUM_ERROR;
 		return rDATA;
 	}
 
@@ -142,7 +141,14 @@ sv_r SVMotor::sv_read(int id)
 	rDATA.load = ((readbuf[14] << 8) & 0x0000FF00) | (readbuf[13] & 0x000000FF);
 	rDATA.temperature = ((readbuf[16] << 8) & 0x0000FF00) | (readbuf[15] & 0x000000FF);
 
-	rDATA.error = 0;	// エラーないよ
+	// if (readbuf[3] & TEMPERATURE_ERROR ) printf("TEMPERATURE_ERROR");
+	// if (readbuf[3] & TEMPERATURE_ALARM ) printf("TEMPERATURE_ALARM");
+	// if (readbuf[3] & FLASH_WRITE_ERROR ) printf("FLASH_WRITE_ERROR");
+	// if (readbuf[3] & PROCESSING_ERROR )	printf("PROCESSING_ERROR");
+
+	rDATA.error = NO_ERROR;	// エラーないよ
+	if (readbuf[3] != NO_ERROR)	rDATA.error = readbuf[3];
+
 	return rDATA;
 }
 
@@ -182,7 +188,7 @@ sv_r SVMotor::sv_read2(int id)
 
 	if (readPort(readbuf, 18) != 18){
 			printf("packet time out\n");
-			rDATA.error = -4;
+			rDATA.error = TIMEOUT_ERROR;
 			return rDATA;
 	}
 
@@ -191,24 +197,29 @@ sv_r SVMotor::sv_read2(int id)
 	for (i = 3; i < 18; i++) {
 		sum = sum ^ readbuf[i];
 	}
-
-	if (sum) {
-		// チェックサムエラー
-		rDATA.error = -3;
+	if (sum) {			// チェックサムエラー
+		rDATA.error = CHECKSUM_ERROR;
 		return rDATA;
 	}
+
 	rDATA.angle = ((readbuf[8] << 8) & 0x0000FF00) | (readbuf[7] & 0x000000FF);
 	rDATA.time = ((readbuf[10] << 8) & 0x0000FF00) | (readbuf[9] & 0x000000FF);
 	rDATA.speed = ((readbuf[12] << 8) & 0x0000FF00) | (readbuf[11] & 0x000000FF);
 	rDATA.load = ((readbuf[14] << 8) & 0x0000FF00) | (readbuf[13] & 0x000000FF);
 	rDATA.temperature = ((readbuf[16] << 8) & 0x0000FF00) | (readbuf[15] & 0x000000FF);
 
-	rDATA.error = 0;	// エラーないよ
+	// if (readbuf[3] & TEMPERATURE_ERROR ) printf("TEMPERATURE_ERROR");
+	// if (readbuf[3] & TEMPERATURE_ALARM ) printf("TEMPERATURE_ALARM");
+	// if (readbuf[3] & FLASH_WRITE_ERROR ) printf("FLASH_WRITE_ERROR");
+	// if (readbuf[3] & PROCESSING_ERROR )	printf("PROCESSING_ERROR");
+
+	rDATA.error = NO_ERROR;	// エラーないよ
+	if (readbuf[3] != NO_ERROR)	rDATA.error = readbuf[3];
 
 	return rDATA;
 }
 
-//svcntサーボの個数
+
 ssize_t SVMotor::sv_move_long(sv_r sendDATA[],unsigned char svcnt) {
 
 	unsigned char	sendbuf[200];
@@ -231,7 +242,7 @@ ssize_t SVMotor::sv_move_long(sv_r sendDATA[],unsigned char svcnt) {
 
 	for (i = 0; i < svcnt; i++) {
 
-		sendbuf[j] = (unsigned char)sendDATA[i].id;															// ID
+		sendbuf[j] = (unsigned char)sendDATA[i].id;								// ID
 
 		sendbuf[j + 1] = (unsigned char)(sendDATA[i].g_angle & 0x00FF);			// 位置
 		sendbuf[j + 2] = (unsigned char)((sendDATA[i].g_angle & 0xFF00) >> 8);	// 位置
@@ -294,15 +305,14 @@ int SVMotor::sv_read_torque(int id)
 	for (i = 3; i < 9; i++) {
 		sum = sum ^ readbuf[i];
 	}
-
-	if (sum) {
-		// チェックサムエラー
+	if (sum) {	// チェックサムエラー
 		return -99;
 	}
 
 	return readbuf[7];
 }
 
+//サーボモーターとのシリアルポートで接続する
 bool SVMotor::init(const char *comport_in,int baudrate)
 {
 	// // https://mcommit.hatenadiary.com/entry/2017/07/09/210840
@@ -321,7 +331,7 @@ bool SVMotor::init(const char *comport_in,int baudrate)
 
 	bzero(&tio, sizeof(tio)); // clear struct for new port settings
 	
-	servo_fd = open(comport_in, O_RDWR|O_NOCTTY|O_NONBLOCK);	// (レイテンシタイマ1msならこっち)
+	servo_fd = open(comport_in, O_RDWR|O_NOCTTY|O_NONBLOCK);	// ポートオープンの仕方が重要
      if (servo_fd < 0) {
          printf("open error\n");
          return -1;
@@ -362,11 +372,12 @@ bool SVMotor::init(const char *comport_in,int baudrate)
  	}
 
  	flag_opened = 1;	// フラグを立てる
-	 tx_time_per_byte = (1000.0 / (double)baudrate) * 10.0;
+	tx_time_per_byte = (1000.0 / (double)baudrate) * 10.0;
 
-     return 0;
+    return 0;
 }
 
+//サーボモーターとのシリアルポートを閉じる
 bool SVMotor::sv_close(void)
 {
   if(flag_opened != 1) return false;
@@ -376,6 +387,7 @@ bool SVMotor::sv_close(void)
   return true;
 }
 
+// サーボから指定したバイト数のパケットを受信する(タイムアウト機能付き)
 int SVMotor::readPort(u_int8_t *readbuf, int length)
 {
 	int i;
@@ -396,22 +408,28 @@ int SVMotor::readPort(u_int8_t *readbuf, int length)
 	return length;
 }
 
+// 受信パケットのバッファをクリア
 int SVMotor::flushPort()
 {
   return tcflush(servo_fd,TCIFLUSH);
 }
 
+// サーボに指定したバイト数のパケット送信
 int SVMotor::writePort(u_int8_t *packet, int length)
 {
   return write(servo_fd, packet, length);
 }
 
+// タイムアウトの時間をセット（通信速度・レイテンシタイマから計算）
+// (Dynamixel SDKより拝借)
 void SVMotor::setPacketTimeout(u_int16_t packet_length)
 {
   packet_start_time_  = getCurrentTime();
   packet_timeout_     = (tx_time_per_byte * (double)packet_length) + (LATENCY_TIMER * 2.0) + 2.0;
 }
 
+// タイムアウトしたかどうかのチェック
+// (Dynamixel SDKより拝借)
 bool SVMotor::isPacketTimeout()
 {
   if(getTimeSinceStart() > packet_timeout_)
@@ -422,6 +440,8 @@ bool SVMotor::isPacketTimeout()
   return false;
 }
 
+// 現在時間の取得
+// (Dynamixel SDKより拝借)
 double SVMotor::getCurrentTime()
 {
 	struct timespec tv;
@@ -429,6 +449,8 @@ double SVMotor::getCurrentTime()
 	return ((double)tv.tv_sec * 1000.0 + (double)tv.tv_nsec * 0.001 * 0.001);
 }
 
+// 計測スタートからの時間
+// (Dynamixel SDKより拝借)
 double SVMotor::getTimeSinceStart()
 {
   double time;
