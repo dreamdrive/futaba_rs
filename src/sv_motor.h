@@ -2,17 +2,18 @@
 struct sv_r {
 	int 			id;				// サーボID
 	int				enable;			// 
-	short			angle;			// 現在の角度 (読み出し用)
-	short			time;			// 移動時間 (読み出し用)
-	short			speed;			// 角速度 (読み出し用)
-	short			load;			// 負荷 (読み出し用)
-	short			temperature;	// 温度 (読み出し用)
-	int				torque;			// トルクON/OFF
-	int				old_torque;		// 前回のトルク保管用(変数)
-	int				error;			// エラー (読み出し用)
-	short			g_angle;		// 目標角度
-	short			old_g_angle;	// 前回の目標角度保管用(変数)
-	unsigned short	g_time;			// 目標への移動時間
+
+	short			angle;			// 現在の角度 (サーボから受信した値)
+	short			time;			// 移動時間 (サーボから受信した値)
+	short			speed;			// 角速度 (サーボから受信した値)
+	short			load;			// 負荷 (サーボから受信した値)
+	short			temperature;	// 温度 (サーボから受信した値)
+	int				torque;			// トルクON/OFF (サーボから受信した値)
+
+	short			g_angle;		// 目標角度 (サーボに送信する目標値)
+	unsigned short	g_time;			// 目標への移動時間 (サーボに送信する目標値)
+
+	int				error;			// エラー
 };
 
 class SVMotor
@@ -37,6 +38,7 @@ class SVMotor
 		ssize_t sv_torque(int id, int torque);		// トルクのオンオフ
 		int sv_read_torque(int id);
 
+		// sv_readとsv_read2はinput/outputは同じ、パケットが短いのでread2が高速
 		sv_r sv_read(int id);
 		sv_r sv_read2(int id);
 
@@ -47,5 +49,4 @@ class SVMotor
 		bool isPacketTimeout();
 		double getCurrentTime();
 		double getTimeSinceStart();
-
 };

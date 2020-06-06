@@ -49,7 +49,6 @@ ssize_t SVMotor::sv_move(int id, short sPos, unsigned short sTime) {
 	flushPort();				// シリアル通信入力バッファクリア（追加）
 
 	return writePort(sendbuf, 12);	// 送信したバイト数を返す／失敗時は-1を返す
-
 }
 
 // サーボIDとトルクのオンオフ
@@ -58,7 +57,6 @@ ssize_t SVMotor::sv_torque(int id, int torque) {
 	unsigned char	sendbuf[28];
 	unsigned char	sum;
 	int				i;
-
 	short sPos = 0;
 	unsigned short sTime = 0;
 
@@ -116,7 +114,7 @@ sv_r SVMotor::sv_read(int id)
 	}
 	sendbuf[7] = sum;								// チェックサム
 
-	flushPort();				// シリアル通信入力バッファクリア（追加）
+	flushPort();						// シリアル通信入力バッファクリア（追加）
 
 	writePort(sendbuf, 8);				// 送信したバイト数を返す
 
@@ -145,7 +143,6 @@ sv_r SVMotor::sv_read(int id)
 	rDATA.temperature = ((readbuf[16] << 8) & 0x0000FF00) | (readbuf[15] & 0x000000FF);
 
 	rDATA.error = 0;	// エラーないよ
-
 	return rDATA;
 }
 
@@ -284,7 +281,7 @@ int SVMotor::sv_read_torque(int id)
 	}
 	sendbuf[7] = sum;								// チェックサム
 
-	tcflush(servo_fd,TCIFLUSH);				// シリアル通信入力バッファクリア（追加）
+	flushPort();									// シリアル通信入力バッファクリア（追加）
 	writePort(sendbuf, 8);				// 送信したバイト数を返す
 
 	if (readPort(readbuf, 9) != 9){
@@ -310,7 +307,7 @@ bool SVMotor::init(const char *comport_in,int baudrate)
 {
 	// // https://mcommit.hatenadiary.com/entry/2017/07/09/210840
 	// // こちら参照コード
-
+	
 	int error_flag = 0;
 	struct termios tio;    
     speed_t baud;
@@ -346,7 +343,7 @@ bool SVMotor::init(const char *comport_in,int baudrate)
 
 	cfmakeraw(&tio);                    // RAWモード
 
- 	error_flag = tcsetattr( servo_fd, TCSANOW, &tio ); // デバイスに設定を行う (成功したら0を返す)
+ 	error_flag = tcsetattr(servo_fd, TCSANOW, &tio ); // デバイスに設定を行う (成功したら0を返す)
      if (error_flag){ 
  		printf("serial device setting(tcsetattr) error\n");
  		return -1;
@@ -378,7 +375,6 @@ bool SVMotor::sv_close(void)
   close(servo_fd);
   return true;
 }
-
 
 int SVMotor::readPort(u_int8_t *readbuf, int length)
 {
