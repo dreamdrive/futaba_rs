@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(futaba_rs)
+project(futaba_rs_controller)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -47,11 +48,12 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
+add_message_files(
+  FILES
+  FutabaRsState.msg
 #   Message1.msg
 #   Message2.msg
-# )
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -68,10 +70,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -104,8 +106,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES futaba_rs
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES futaba_rs_controller
+  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -122,7 +124,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/futaba_rs.cpp
+#   src/${PROJECT_NAME}/futaba_rs_controller.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -135,8 +137,8 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/futaba_rs_node.cpp)
 
-add_executable(rs_controller src/rs_controller.cpp src/sv_motor.cpp)
-add_dependencies(rs_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(futaba_rs_controller src/futaba_rs_controller.cpp src/futaba_rs.cpp)
+add_dependencies(futaba_rs_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,7 +156,7 @@ add_dependencies(rs_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 # )
 
 
-target_link_libraries(rs_controller
+target_link_libraries(futaba_rs_controller
   ${catkin_LIBRARIES}
 )
 

@@ -12,12 +12,12 @@
 #include <time.h>
 #include <linux/serial.h>
 
-#include "sv_motor.h"
+#include "futaba_rs.h"
 
 #define LATENCY_TIMER 16
 
 // サーボの動作
-ssize_t SVMotor::sv_move(int id, short sPos, unsigned short sTime) {
+ssize_t futaba_rs::sv_move(int id, short sPos, unsigned short sTime) {
 	
 	unsigned char	sendbuf[28];
 	unsigned char	sum;
@@ -51,7 +51,7 @@ ssize_t SVMotor::sv_move(int id, short sPos, unsigned short sTime) {
 }
 
 // サーボIDとトルクのオンオフ
-ssize_t SVMotor::sv_torque(int id, int torque) {
+ssize_t futaba_rs::sv_torque(int id, int torque) {
 
 	unsigned char	sendbuf[28];
 	unsigned char	sum;
@@ -84,14 +84,14 @@ ssize_t SVMotor::sv_torque(int id, int torque) {
 	return writePort(sendbuf, 9);				// 送信したバイト数を返す／失敗時は-1を返す
 }
 
-sv_r SVMotor::sv_read(int id)
+frs_t futaba_rs::sv_read(int id)
 {
 	unsigned char	sendbuf[32];
 	unsigned char	readbuf[128];
 	unsigned char	sum;
 	int				i;
 	int temp_cnt = 0;
-	sv_r rDATA;
+	frs_t rDATA;
 	int nread;
 	int recv;
 
@@ -141,6 +141,7 @@ sv_r SVMotor::sv_read(int id)
 	rDATA.load = ((readbuf[14] << 8) & 0x0000FF00) | (readbuf[13] & 0x000000FF);
 	rDATA.temperature = ((readbuf[16] << 8) & 0x0000FF00) | (readbuf[15] & 0x000000FF);
 
+	// デバッグ用
 	// if (readbuf[3] & TEMPERATURE_ERROR ) printf("TEMPERATURE_ERROR");
 	// if (readbuf[3] & TEMPERATURE_ALARM ) printf("TEMPERATURE_ALARM");
 	// if (readbuf[3] & FLASH_WRITE_ERROR ) printf("FLASH_WRITE_ERROR");
@@ -152,14 +153,14 @@ sv_r SVMotor::sv_read(int id)
 	return rDATA;
 }
 
-sv_r SVMotor::sv_read2(int id)
+frs_t futaba_rs::sv_read2(int id)
 {
 	unsigned char	sendbuf[32];
 	unsigned char	readbuf[128];
 	unsigned char	sum;
 	unsigned char	temp_buf[1];
 	int				i;
-	sv_r rDATA;
+	frs_t rDATA;
 	int nread;
 	int recv;
 
@@ -208,6 +209,7 @@ sv_r SVMotor::sv_read2(int id)
 	rDATA.load = ((readbuf[14] << 8) & 0x0000FF00) | (readbuf[13] & 0x000000FF);
 	rDATA.temperature = ((readbuf[16] << 8) & 0x0000FF00) | (readbuf[15] & 0x000000FF);
 
+	// デバッグ用
 	// if (readbuf[3] & TEMPERATURE_ERROR ) printf("TEMPERATURE_ERROR");
 	// if (readbuf[3] & TEMPERATURE_ALARM ) printf("TEMPERATURE_ALARM");
 	// if (readbuf[3] & FLASH_WRITE_ERROR ) printf("FLASH_WRITE_ERROR");
@@ -220,7 +222,7 @@ sv_r SVMotor::sv_read2(int id)
 }
 
 
-ssize_t SVMotor::sv_move_long(sv_r sendDATA[],unsigned char svcnt) {
+ssize_t futaba_rs::sv_move_long(frs_t sendDATA[],unsigned char svcnt) {
 
 	unsigned char	sendbuf[200];
 	unsigned char	sum;
@@ -264,7 +266,7 @@ ssize_t SVMotor::sv_move_long(sv_r sendDATA[],unsigned char svcnt) {
 	return writePort(sendbuf, j);					// 送信したバイト数を返す／失敗時は-1を返す
 }
 
-int SVMotor::sv_read_torque(int id)
+int futaba_rs::sv_read_torque(int id)
 {
 	unsigned char	sendbuf[32];
 	unsigned char	readbuf[128];
@@ -313,7 +315,7 @@ int SVMotor::sv_read_torque(int id)
 }
 
 //サーボモーターとのシリアルポートで接続する
-bool SVMotor::init(const char *comport_in,int baudrate)
+bool futaba_rs::init(const char *comport_in,int baudrate)
 {
 	// // https://mcommit.hatenadiary.com/entry/2017/07/09/210840
 	// // こちら参照コード
@@ -331,8 +333,8 @@ bool SVMotor::init(const char *comport_in,int baudrate)
 
 	bzero(&tio, sizeof(tio)); // clear struct for new port settings
 	
-	servo_fd = open(comport_in, O_RDWR|O_NOCTTY|O_NONBLOCK);	// ポートオープンの仕方が重要
-     if (servo_fd < 0) {
+	servo_fd_ = open(comport_in, O_RDWR|O_NOCTTY|O_NONBLOCK);	// ポートオープンの仕方が重要
+     if (servo_fd_ < 0) {
          printf("open error\n");
          return -1;
      }
@@ -353,42 +355,42 @@ bool SVMotor::init(const char *comport_in,int baudrate)
 
 	cfmakeraw(&tio);                    // RAWモード
 
- 	error_flag = tcsetattr(servo_fd, TCSANOW, &tio ); // デバイスに設定を行う (成功したら0を返す)
+ 	error_flag = tcsetattr(servo_fd_, TCSANOW, &tio ); // デバイスに設定を行う (成功したら0を返す)
      if (error_flag){ 
  		printf("serial device setting(tcsetattr) error\n");
  		return -1;
  	}
 
-     error_flag = ioctl(servo_fd, TCSETS, &tio);            // ポートの設定を有効にする
+     error_flag = ioctl(servo_fd_, TCSETS, &tio);            // ポートの設定を有効にする
      if (error_flag== -1 ){ 
  		printf("serial device setting(ioctl) error\n");
  		return -1;
  	}
 
- 	error_flag = tcflush(servo_fd,TCIFLUSH);				// 入力バッファクリア（追加）
+ 	error_flag = tcflush(servo_fd_,TCIFLUSH);				// 入力バッファクリア（追加）
     if (error_flag == -1 ){ 
  	 	printf("serial device setting(tcflush) error\n");
  		return -1;
  	}
 
  	flag_opened = 1;	// フラグを立てる
-	tx_time_per_byte = (1000.0 / (double)baudrate) * 10.0;
+	tx_time_per_byte_ = (1000.0 / (double)baudrate) * 10.0;
 
     return 0;
 }
 
 //サーボモーターとのシリアルポートを閉じる
-bool SVMotor::sv_close(void)
+bool futaba_rs::sv_close(void)
 {
   if(flag_opened != 1) return false;
 
   flag_opened = 0 ;
-  close(servo_fd);
+  close(servo_fd_);
   return true;
 }
 
 // サーボから指定したバイト数のパケットを受信する(タイムアウト機能付き)
-int SVMotor::readPort(u_int8_t *readbuf, int length)
+int futaba_rs::readPort(u_int8_t *readbuf, int length)
 {
 	int i;
 	unsigned char	temp_buf[1];
@@ -396,7 +398,7 @@ int SVMotor::readPort(u_int8_t *readbuf, int length)
 	setPacketTimeout(length);		// タイムアウトを初期化
 
 	for(i=0; i<length ;){
-		if( read(servo_fd, temp_buf, 1) == 1 ){		// 1バイト受信したら
+		if( read(servo_fd_, temp_buf, 1) == 1 ){		// 1バイト受信したら
 			readbuf[i] = temp_buf[0];
 			i++;								// 受信したらカウンタを進める
 		}
@@ -409,28 +411,28 @@ int SVMotor::readPort(u_int8_t *readbuf, int length)
 }
 
 // 受信パケットのバッファをクリア
-int SVMotor::flushPort()
+int futaba_rs::flushPort()
 {
-  return tcflush(servo_fd,TCIFLUSH);
+  return tcflush(servo_fd_,TCIFLUSH);
 }
 
 // サーボに指定したバイト数のパケット送信
-int SVMotor::writePort(u_int8_t *packet, int length)
+int futaba_rs::writePort(u_int8_t *packet, int length)
 {
-  return write(servo_fd, packet, length);
+  return write(servo_fd_, packet, length);
 }
 
 // タイムアウトの時間をセット（通信速度・レイテンシタイマから計算）
 // (Dynamixel SDKより拝借)
-void SVMotor::setPacketTimeout(u_int16_t packet_length)
+void futaba_rs::setPacketTimeout(u_int16_t packet_length)
 {
   packet_start_time_  = getCurrentTime();
-  packet_timeout_     = (tx_time_per_byte * (double)packet_length) + (LATENCY_TIMER * 2.0) + 2.0;
+  packet_timeout_     = (tx_time_per_byte_ * (double)packet_length) + (LATENCY_TIMER * 2.0) + 2.0;
 }
 
 // タイムアウトしたかどうかのチェック
 // (Dynamixel SDKより拝借)
-bool SVMotor::isPacketTimeout()
+bool futaba_rs::isPacketTimeout()
 {
   if(getTimeSinceStart() > packet_timeout_)
   {
@@ -442,7 +444,7 @@ bool SVMotor::isPacketTimeout()
 
 // 現在時間の取得
 // (Dynamixel SDKより拝借)
-double SVMotor::getCurrentTime()
+double futaba_rs::getCurrentTime()
 {
 	struct timespec tv;
 	clock_gettime(CLOCK_REALTIME, &tv);
@@ -451,7 +453,7 @@ double SVMotor::getCurrentTime()
 
 // 計測スタートからの時間
 // (Dynamixel SDKより拝借)
-double SVMotor::getTimeSinceStart()
+double futaba_rs::getTimeSinceStart()
 {
   double time;
 

@@ -1,12 +1,11 @@
 <launch>
   <arg name="port_name"                default="/dev/ttyUSB0"/>
   <arg name="baud_rate"                default="460800"/>
+  <arg name="ctl_rate"                default="10"/>
 
-  <!-- <param name="dynamixel_info"          value="$(find dynamixel_workbench_controllers)/config/basic.yaml"/> -->
-
-  <node type="rs_controller" pkg="futaba_rs" name="rs_controller">
+  <node type="futaba_rs_controller" pkg="futaba_rs_controller" name="futaba_rs_controller">
     <param name="port_name" value="$(arg port_name)" />
     <param name="baud_rate" value="$(arg baud_rate)" />
+    <param name="ctl_rate" value="$(arg ctl_rate)" />
   </node>
-
 </launch>
