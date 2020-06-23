@@ -1,0 +1,42 @@
+# You can find control table of Dynamixel on emanual (http://emanual.robotis.com/#control-table)
+# Control table item has to be set Camel_Case and not included whitespace
+# You are supposed to set at least Dynamixel ID
+# This example is compatible with Dynamixel using protocol 2.0
+body_to_shoulder1R:
+  ID: 61
+shoulder1R_to_shoulder2R:
+  ID: 62
+shoulder2R_to_shoulder3R:
+  ID: 63
+shoulder3R_to_arm1R:
+  ID: 64
+arm1R_to_arm2R:
+  ID: 65
+arm2R_to_arm3R:
+  ID: 66
+arm3R_to_arm4R:
+  ID: 67
+arm4R_to_arm5R:
+  ID: 68
+body_to_shoulder1L:
+  ID: 71
+shoulder1L_to_shoulder2L:
+  ID: 72
+shoulder2L_to_shoulder3L:
+  ID: 73
+shoulder3L_to_arm1L:
+  ID: 74
+arm1L_to_arm2L:
+  ID: 75
+arm2L_to_arm3L:
+  ID: 76
+arm3L_to_arm4L:
+  ID: 77
+arm4L_to_arm5L:
+  ID: 78
+body_to_kubi1:
+  ID: 91
+kubi1_to_kubi2:
+  ID: 92
+kubi_to_head:
+  ID: 93

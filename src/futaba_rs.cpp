@@ -1,18 +1,5 @@
-#include <string.h>
-#include <stdio.h>
-#include <strings.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <termios.h>
-#include <unistd.h>
-#include <time.h>
-#include <linux/serial.h>
 
-#include "futaba_rs.h"
+#include "futaba_rs_controller/futaba_rs.h"
 
 #define LATENCY_TIMER 16
 
