@@ -24,15 +24,18 @@
 // サーボの最大個数 (接続するサーボの最大個数yamlに記述するサーボ数を下回らなければ問題ない)
 #define MAX_SRVCNT 99
 
+// ジョイント名に使える名前の文字数の上限
+#define JOINT_NAME_WC 30
+
 // 設定はここまで -----------------------------------------------
 
-int ctl_rate_hz;
-int srvcnt = 0;				// サーボモーターの個数
-frs_t receivedData[MAX_SRVCNT];
-frs_t subData[MAX_SRVCNT];
+int ctl_rate_hz;					// 制御周期
+int srvcnt = 0;						// サーボモーターの個数
+frs_t receivedData[MAX_SRVCNT];		// サーボから受信したデータ
+frs_t subData[MAX_SRVCNT];			// 購読したデータ
 
-int id_list[MAX_SRVCNT];
-char joint_list[MAX_SRVCNT][30];
+int id_list[MAX_SRVCNT];						// IDリスト
+char joint_list[MAX_SRVCNT][JOINT_NAME_WC];		// ジョイント名リスト
 
 futaba_rs Futaba_RS;
 
