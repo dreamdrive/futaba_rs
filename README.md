@@ -34,7 +34,7 @@ $ roslaunch futaba_rs_controller futaba_rs_controller.launch
 ## launchファイル設定
 
 futaba_rs_controller.launch 内のros paramで、シリアルポート名、ボーレート、制御周期(Hz)が変更できます。
-制御周期は、サーボ数に依存します。
+制御周期の最大値は、サーボ数に依存します。
 
 ```
   <arg name="port_name"                default="/dev/ttyUSB0"/>
