@@ -89,5 +89,5 @@ Tailway Software.
 https://tailway.net/
 
 ## License
-This is under Apache 2.0 license.  
+This is under MIT License.  
 また、本パッケージには、[dynamixel_workbench_controllers](http://wiki.ros.org/dynamixel_workbench_controllers)を参考にしている部分が多く含まれます。
